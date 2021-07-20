@@ -21,6 +21,8 @@ struct ContentView: View {
     @State var gameDificult: DificultOfGame = .normal
     @State var backgroundColorApp: Color = .white
     
+    @State var countOperations = 0
+    @State var questionsResult = [String: [Int]]()
     
     var body: some View {
         NavigationView {
@@ -46,17 +48,23 @@ struct ContentView: View {
                             HStack {
                                 DificultButton(dificultText: "Easy", dificultType: .easy).onTapGesture {
                                     gameDificult = .easy
+                                    obtainNumberOfQuestions()
                                     backgroundColorApp = addStyleAccordingGameMode()
+                                    createQuestionsGame(countOperation: countOperations, tableNumber: tableOf)
                                 }
                                 
                                 DificultButton(dificultText: "Normal", dificultType: .normal).onTapGesture {
                                     gameDificult = .normal
+                                    obtainNumberOfQuestions()
                                     backgroundColorApp = addStyleAccordingGameMode()
+                                    createQuestionsGame(countOperation: countOperations, tableNumber: tableOf)
                                 }
                                 
                                 DificultButton(dificultText: "Hard", dificultType: .hard).onTapGesture {
                                     gameDificult = .hard
+                                    obtainNumberOfQuestions()
                                     backgroundColorApp = addStyleAccordingGameMode()
+                                    createQuestionsGame(countOperation: countOperations, tableNumber: tableOf)
                                 }
                             }
                         }
@@ -69,17 +77,48 @@ struct ContentView: View {
                     
                     // Game Field
                     
-                    GameField(countQuestions: 2, questions: [
-                        "10x3": [28, 30, 21],
-                        "10x1": [20,10, 30]
-                    ])
+                    GameField(countQuestions: countOperations, questions: questionsResult)
                     
                     Spacer()
                     
                 }
                 .navigationTitle(Text("Edutainment"))
+                .navigationBarItems(trailing: Button("Restart Game") {
+                    countOperations = 0
+                    questionsResult = [String : [Int]]()
+                    backgroundColorApp = .white
+                    tableOf = 0
+                })
             }
         }
+    }
+    
+    private func obtainNumberOfQuestions() {
+        switch gameDificult {
+        case .easy:
+            countOperations = 3
+        case .normal:
+            countOperations = 6
+        case .hard:
+            countOperations = 9
+        }
+    }
+    
+    private func createQuestionsGame(countOperation: Int, tableNumber: Int) {
+        var createArraySolutions = [String : [Int]]()
+        for _ in 0 ..< countOperation {
+            let randomNumber = Int.random(in: 1 ..< 11)
+            let questionString = "\(tableNumber)x\(randomNumber)"
+            
+            createArraySolutions.updateValue(
+                [tableNumber * randomNumber,
+                 tableNumber * Int.random(in: 1..<11),
+                 tableNumber * Int.random(in: 1..<11)].shuffled(), forKey: questionString)
+        }
+        
+        questionsResult = createArraySolutions
+        
+        print("Array Game \(createArraySolutions)")
     }
     
     func addStyleAccordingGameMode() -> Color {
@@ -102,7 +141,7 @@ struct GameField: View {
     @State var showUserScoreView = false
     
     var body: some View {
-        if showUserScoreView  {
+        if showUserScoreView || questions.keys.count == 0 {
             scoreView(userScore: userCount)
         } else {
             gameView()
@@ -116,6 +155,7 @@ struct GameField: View {
         return VStack {
             HStack {
                 Text("Game Field").padding(.leading)
+                    .font(.title)
                 
                 Spacer()
                 
@@ -126,6 +166,7 @@ struct GameField: View {
                 .frame(height: 24)
                 
             Text("Choose correct answer to:  \(keys[actualQuestion])")
+                .font(.title3)
             
             Spacer()
                 .frame(height: 24)
@@ -202,9 +243,15 @@ struct GameField: View {
     }
     
     private func scoreView(userScore: Int) -> some View {
-        return VStack {
-            Text("User Score \(userScore)")
-        }
+        return VStack(alignment: .center, spacing: 16, content: {
+            Text("User Score")
+                .padding()
+                .font(.largeTitle)
+            
+            Text("\(userScore)")
+                .padding()
+                .font(.system(size: 62))
+        })
     }
     
     private func isCorrectAnswer(op: String, value: Int) -> Bool {
